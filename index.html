@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>아파트 외벽 도장 미리보기</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workbench" aria-label="아파트 외벽 도장 미리보기 작업 화면">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Exterior Paint Preview</p>
+            <h1>아파트 외벽 도장 미리보기</h1>
+          </div>
+          <div class="top-actions">
+            <label class="file-button">
+              <input id="uploadInput" type="file" accept="image/*">
+              사진 업로드
+            </label>
+            <button id="downloadButton" type="button">결과 저장</button>
+          </div>
+        </header>
+
+        <div class="tool-layout">
+          <aside class="toolbar" aria-label="편집 도구">
+            <div class="tool-group">
+              <span class="group-title">선택 방식</span>
+              <p class="hint">시공 후 사진에서 바꿀 외벽 면을 클릭하면 연결된 면이 자동으로 채워집니다.</p>
+            </div>
+
+            <div class="tool-group zone-panel">
+              <div class="group-line">
+                <span class="group-title">색상 변환 위치</span>
+                <button id="addZoneButton" class="small-button" type="button">추가</button>
+              </div>
+              <div id="zoneList" class="zone-list" aria-label="색상 변환 위치 목록"></div>
+            </div>
+
+            <div class="tool-group">
+              <label for="paintColor">선택 위치 색상</label>
+              <input id="paintColor" class="color-input" type="color" value="#8f9691">
+              <div class="swatches" aria-label="추천 색상">
+                <button type="button" class="swatch" data-color="#8f9691" style="--swatch: #8f9691" aria-label="웜 그레이"></button>
+                <button type="button" class="swatch" data-color="#c7c1af" style="--swatch: #c7c1af" aria-label="스톤 베이지"></button>
+                <button type="button" class="swatch" data-color="#cbd7d1" style="--swatch: #cbd7d1" aria-label="세이지 라이트"></button>
+                <button type="button" class="swatch" data-color="#dde2df" style="--swatch: #dde2df" aria-label="라이트 실버"></button>
+                <button type="button" class="swatch" data-color="#6e7b80" style="--swatch: #6e7b80" aria-label="딥 쿨그레이"></button>
+              </div>
+            </div>
+
+            <div class="tool-group compact-controls">
+              <label for="fillTolerance">면 인식 범위 <output id="fillToleranceValue">42</output></label>
+              <input id="fillTolerance" type="range" min="14" max="92" value="42">
+            </div>
+
+            <div class="tool-group compact-controls">
+              <label for="blendStrength">도장 강도 <output id="blendStrengthValue">78%</output></label>
+              <input id="blendStrength" type="range" min="35" max="100" value="78">
+            </div>
+
+            <div class="tool-group">
+              <label class="check-row">
+                <input id="edgeAssist" type="checkbox" checked>
+                <span>AI 보정</span>
+              </label>
+            </div>
+
+            <div class="tool-group tool-actions">
+              <button id="autoMaskButton" type="button">외벽 전체 후보 선택</button>
+              <button id="undoButton" type="button">되돌리기</button>
+              <button id="clearMaskButton" type="button">현재 위치 선택 지우기</button>
+              <button id="sampleButton" type="button">예시로 시작</button>
+            </div>
+          </aside>
+
+          <section class="preview-area">
+            <div class="compare-header" aria-hidden="true">
+              <span>시공 전</span>
+              <span>시공 후</span>
+            </div>
+            <div class="canvas-frame">
+              <canvas id="previewCanvas" width="1280" height="720"></canvas>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
