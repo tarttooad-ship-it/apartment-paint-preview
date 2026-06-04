@@ -4,6 +4,8 @@ const uploadInput = document.querySelector("#uploadInput");
 const colorInput = document.querySelector("#paintColor");
 const fillTolerance = document.querySelector("#fillTolerance");
 const fillToleranceValue = document.querySelector("#fillToleranceValue");
+const zoomLevel = document.querySelector("#zoomLevel");
+const zoomLevelValue = document.querySelector("#zoomLevelValue");
 const blendStrength = document.querySelector("#blendStrength");
 const blendStrengthValue = document.querySelector("#blendStrengthValue");
 const edgeAssist = document.querySelector("#edgeAssist");
@@ -24,6 +26,7 @@ let zones = [];
 let activeZoneId = null;
 let history = [];
 let pointerStart = null;
+let isSingleView = false;
 
 sourceImage.onload = () => {
   fitCanvasToImage();
@@ -33,15 +36,16 @@ sourceImage.onload = () => {
 sourceImage.src = "assets/demo-apartment.png";
 
 function fitCanvasToImage() {
-  const maxWidth = 1440;
+  isSingleView = window.matchMedia("(max-width: 760px)").matches;
+  const maxWidth = isSingleView ? 960 : 1440;
   const ratio = sourceImage.naturalWidth / sourceImage.naturalHeight;
-  const panelWidth = Math.min(Math.floor(maxWidth / 2), sourceImage.naturalWidth);
-  const width = panelWidth * 2;
+  const panelWidth = Math.min(isSingleView ? maxWidth : Math.floor(maxWidth / 2), sourceImage.naturalWidth);
+  const width = isSingleView ? panelWidth : panelWidth * 2;
   const height = Math.round(panelWidth / ratio);
   canvas.width = width;
   canvas.height = height;
   ctx.drawImage(sourceImage, 0, 0, panelWidth, height);
-  ctx.drawImage(sourceImage, panelWidth, 0, panelWidth, height);
+  if (!isSingleView) ctx.drawImage(sourceImage, panelWidth, 0, panelWidth, height);
   baseImageData = ctx.getImageData(0, 0, width, height);
 }
 
@@ -139,9 +143,14 @@ function getPointerPoint(event) {
 }
 
 function afterSidePoint(point) {
+  if (isSingleView) return point;
   const split = canvas.width / 2;
   if (point.x < split) return { x: point.x + split, y: point.y };
   return point;
+}
+
+function editableStartX() {
+  return isSingleView ? 0 : Math.floor(canvas.width / 2);
 }
 
 function fillConnectedSurface(point) {
@@ -150,7 +159,7 @@ function fillConnectedSurface(point) {
 
   const width = canvas.width;
   const height = canvas.height;
-  const split = Math.floor(width / 2);
+  const split = editableStartX();
   const seedX = Math.max(split, Math.min(width - 1, Math.round(point.x)));
   const seedY = Math.max(0, Math.min(height - 1, Math.round(point.y)));
   const seedIndex = (seedY * width + seedX) * 4;
@@ -213,7 +222,7 @@ function isSimilarSurface(data, index, seed, tolerance) {
   const colorDistance = Math.sqrt(dr * dr * 0.35 + dg * dg * 0.45 + db * db * 0.2);
   const lumDistance = Math.abs(luminance(data, index) - seed.lum);
   const satDistance = Math.abs(saturation(data, index) - seed.sat) * 100;
-  return colorDistance <= tolerance * 1.75 && lumDistance <= tolerance * 1.45 && satDistance <= tolerance * 0.9;
+  return colorDistance <= tolerance * 1.35 && lumDistance <= tolerance * 1.1 && satDistance <= tolerance * 0.7;
 }
 
 function refinedMaskData(zone) {
@@ -246,7 +255,7 @@ function refinedMaskData(zone) {
       const up = luminance(source, i - width * 4);
       const down = luminance(source, i + width * 4);
       const edge = Math.abs(left - right) + Math.abs(up - down);
-      if (edge < 54) data[i + 3] = Math.round(nearbyMask * 0.52);
+      if (edge < 42) data[i + 3] = Math.round(nearbyMask * 0.45);
     }
   }
 
@@ -271,7 +280,7 @@ function render() {
   const width = canvas.width;
   const result = new ImageData(new Uint8ClampedArray(baseImageData.data), width, canvas.height);
   const strength = Number(blendStrength.value) / 100;
-  const split = Math.floor(width / 2);
+  const split = editableStartX();
 
   zones.forEach((zone) => {
     const mask = refinedMaskData(zone).data;
@@ -293,7 +302,7 @@ function render() {
 
   ctx.putImageData(result, 0, 0);
   drawMaskOverlay(split);
-  drawDivider(split);
+  if (!isSingleView) drawDivider(split);
 }
 
 function drawMaskOverlay(split) {
@@ -344,7 +353,7 @@ function autoSelectFacade() {
 
   const width = canvas.width;
   const height = canvas.height;
-  const split = Math.floor(width / 2);
+  const split = editableStartX();
   const mask = zone.ctx.createImageData(width, height);
   const source = baseImageData.data;
 
@@ -431,6 +440,12 @@ fillTolerance.addEventListener("input", () => {
   fillToleranceValue.value = fillTolerance.value;
 });
 
+zoomLevel.addEventListener("input", () => {
+  const scale = Number(zoomLevel.value) / 100;
+  zoomLevelValue.value = `${zoomLevel.value}%`;
+  canvas.style.setProperty("--zoom", scale);
+});
+
 blendStrength.addEventListener("input", () => {
   blendStrengthValue.value = `${blendStrength.value}%`;
   render();
@@ -491,4 +506,12 @@ uploadInput.addEventListener("change", (event) => {
     sourceImage.src = reader.result;
   };
   reader.readAsDataURL(file);
+});
+
+window.addEventListener("resize", () => {
+  const nextSingleView = window.matchMedia("(max-width: 760px)").matches;
+  if (nextSingleView === isSingleView) return;
+  fitCanvasToImage();
+  resetZones();
+  render();
 });
